@@ -67,15 +67,25 @@ final class DashboardController extends StateNotifier<DashboardState> {
     required String currencyCode,
     required LocalDate nextPaymentDate,
     required SystemCategory category,
+    required BillingCadence billingCadence,
     String? paymentMethodNickname,
   }) async {
+    final billingSchedule = switch (billingCadence) {
+      BillingCadence.monthly => BillingSchedule.monthly(
+        day: nextPaymentDate.day,
+      ),
+      BillingCadence.yearly => BillingSchedule.yearly(
+        month: nextPaymentDate.month,
+        day: nextPaymentDate.day,
+      ),
+    };
     final payment = RecurringPayment(
       id: _uuid.v4(),
       name: name.trim(),
       amountMinor: amountMinor,
       currencyCode: currencyCode.trim().toUpperCase(),
       nextPaymentDate: nextPaymentDate,
-      billingSchedule: BillingSchedule.monthly(day: nextPaymentDate.day),
+      billingSchedule: billingSchedule,
       paymentMethodNickname: paymentMethodNickname?.trim().isEmpty == true
           ? null
           : paymentMethodNickname?.trim(),

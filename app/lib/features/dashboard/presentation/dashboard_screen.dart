@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/domain/billing_schedule.dart';
 import '../../../core/domain/local_date.dart';
 import '../../../core/domain/money.dart';
 import '../../payment_occurrences/domain/payment_occurrence.dart';
@@ -261,6 +262,7 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
   final _paymentMethod = TextEditingController();
   LocalDate? _dateValue;
   SystemCategory _category = SystemCategory.entertainment;
+  BillingCadence _billingCadence = BillingCadence.monthly;
   bool _saving = false;
 
   @override
@@ -298,7 +300,7 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(labelText: 'Aylık tutar'),
+                decoration: const InputDecoration(labelText: 'Tutar'),
                 validator: (value) {
                   try {
                     if (parseMinorUnits(value ?? '') <= 0) {
@@ -322,6 +324,22 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
                     RegExp(r'^[A-Za-z]{3}$').hasMatch(value?.trim() ?? '')
                     ? null
                     : 'Üç harfli kod girin.',
+              ),
+              const SizedBox(height: 12),
+              SegmentedButton<BillingCadence>(
+                segments: const [
+                  ButtonSegment(
+                    value: BillingCadence.monthly,
+                    label: Text('Aylık'),
+                  ),
+                  ButtonSegment(
+                    value: BillingCadence.yearly,
+                    label: Text('Yıllık'),
+                  ),
+                ],
+                selected: {_billingCadence},
+                onSelectionChanged: (selection) =>
+                    setState(() => _billingCadence = selection.single),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<SystemCategory>(
@@ -424,6 +442,7 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
           nextPaymentDate: _dateValue!,
           paymentMethodNickname: _paymentMethod.text,
           category: _category,
+          billingCadence: _billingCadence,
         );
     if (mounted) Navigator.pop(context);
   }

@@ -1,6 +1,7 @@
 import 'package:abonelik_takip/app/app.dart';
 import 'package:abonelik_takip/app/providers.dart';
 import 'package:abonelik_takip/core/domain/app_clock.dart';
+import 'package:abonelik_takip/core/domain/billing_schedule.dart';
 import 'package:abonelik_takip/core/domain/local_date.dart';
 import 'package:abonelik_takip/core/persistence/app_database.dart';
 import 'package:abonelik_takip/features/notifications/domain/notification_scheduler.dart';
@@ -41,6 +42,7 @@ void main() {
           currencyCode: 'TRY',
           nextPaymentDate: LocalDate(2026, 8, 15),
           category: SystemCategory.entertainment,
+          billingCadence: BillingCadence.monthly,
           paymentMethodNickname: 'Bonus kart',
         );
     await tester.pumpAndSettle();
@@ -77,6 +79,13 @@ void main() {
     expect(find.byKey(const Key('payment-name')), findsOneWidget);
     expect(find.byKey(const Key('payment-amount')), findsOneWidget);
     expect(find.byKey(const Key('payment-currency')), findsOneWidget);
+    expect(find.text('Tutar'), findsOneWidget);
+    expect(find.text('Aylık'), findsOneWidget);
+    expect(find.text('Yıllık'), findsOneWidget);
+    final cadenceSelector = tester.widget<SegmentedButton<BillingCadence>>(
+      find.byType(SegmentedButton<BillingCadence>),
+    );
+    expect(cadenceSelector.selected, {BillingCadence.monthly});
     expect(find.text('Sonraki ödeme tarihi'), findsOneWidget);
   });
 }
