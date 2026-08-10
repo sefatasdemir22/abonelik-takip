@@ -41,7 +41,7 @@ final class DriftPaymentOccurrenceRepository
                 mode: InsertMode.insertOrIgnore,
               );
           if (affected > 0) inserted++;
-          dueDate = dueDate.addMonthsAnchored(1, payment.billingDay);
+          dueDate = payment.billingSchedule.nextAfter(dueDate);
         }
         if (dueDate != payment.nextPaymentDate) {
           await _recurringPayments.updateNextPaymentDate(

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/domain/app_clock.dart';
+import '../../../core/domain/billing_schedule.dart';
 import '../../../core/domain/local_date.dart';
 import '../../notifications/domain/notification_scheduler.dart';
 import '../../payment_occurrences/domain/payment_occurrence.dart';
@@ -74,7 +75,7 @@ final class DashboardController extends StateNotifier<DashboardState> {
       amountMinor: amountMinor,
       currencyCode: currencyCode.trim().toUpperCase(),
       nextPaymentDate: nextPaymentDate,
-      billingDay: nextPaymentDate.day,
+      billingSchedule: BillingSchedule.monthly(day: nextPaymentDate.day),
       paymentMethodNickname: paymentMethodNickname?.trim().isEmpty == true
           ? null
           : paymentMethodNickname?.trim(),

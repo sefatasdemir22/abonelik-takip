@@ -1,3 +1,4 @@
+import 'package:abonelik_takip/core/domain/billing_schedule.dart';
 import 'package:abonelik_takip/core/domain/local_date.dart';
 import 'package:abonelik_takip/core/persistence/app_database.dart';
 import 'package:abonelik_takip/features/payment_occurrences/data/drift_payment_occurrence_repository.dart';
@@ -51,6 +52,37 @@ void main() {
     expect((await occurrences.getAwaitingConfirmation()).length, 2);
   });
 
+  test('yearly schedule repository round-trip sirasinda korunur', () async {
+    await recurring.add(
+      _payment(
+        id: 'yearly',
+        date: LocalDate(2026, 8, 31),
+        schedule: BillingSchedule.yearly(month: 8, day: 31),
+      ),
+    );
+
+    final schedule = (await recurring.getActive()).single.billingSchedule;
+    expect(schedule.cadence, BillingCadence.yearly);
+    expect(schedule.anchorMonth, 8);
+    expect(schedule.anchorDay, 31);
+  });
+
+  test('yearly February 29 occurrence sonrasi February 28 olur', () async {
+    await recurring.add(
+      _payment(
+        id: 'leap-year',
+        date: LocalDate(2024, 2, 29),
+        schedule: BillingSchedule.yearly(month: 2, day: 29),
+      ),
+    );
+
+    await occurrences.materializeDueOccurrences(LocalDate(2024, 2, 29));
+
+    final payment = (await recurring.getActive()).single;
+    expect(payment.nextPaymentDate, LocalDate(2025, 2, 28));
+    expect((await occurrences.getAwaitingConfirmation()).length, 1);
+  });
+
   test(
     'paid toplama girer, skipped girmez ve para birimleri ayrıdır',
     () async {
@@ -83,13 +115,14 @@ RecurringPayment _payment({
   required String id,
   required LocalDate date,
   String currency = 'TRY',
+  BillingSchedule? schedule,
 }) => RecurringPayment(
   id: id,
   name: 'Test ödeme',
   amountMinor: 12990,
   currencyCode: currency,
   nextPaymentDate: date,
-  billingDay: date.day,
+  billingSchedule: schedule ?? BillingSchedule.monthly(day: date.day),
   category: SystemCategory.software,
   createdAtUtc: DateTime.utc(2026, 8, 1),
 );

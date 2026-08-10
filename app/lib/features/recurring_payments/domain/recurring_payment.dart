@@ -1,3 +1,4 @@
+import '../../../core/domain/billing_schedule.dart';
 import '../../../core/domain/local_date.dart';
 
 enum SystemCategory { entertainment, software, communication, other }
@@ -9,7 +10,7 @@ final class RecurringPayment {
     required this.amountMinor,
     required this.currencyCode,
     required this.nextPaymentDate,
-    required this.billingDay,
+    required this.billingSchedule,
     required this.category,
     required this.createdAtUtc,
     this.paymentMethodNickname,
@@ -21,7 +22,7 @@ final class RecurringPayment {
   final int amountMinor;
   final String currencyCode;
   final LocalDate nextPaymentDate;
-  final int billingDay;
+  final BillingSchedule billingSchedule;
   final String? paymentMethodNickname;
   final SystemCategory category;
   final bool active;
@@ -33,7 +34,7 @@ final class RecurringPayment {
     amountMinor: amountMinor,
     currencyCode: currencyCode,
     nextPaymentDate: nextPaymentDate ?? this.nextPaymentDate,
-    billingDay: billingDay,
+    billingSchedule: billingSchedule,
     paymentMethodNickname: paymentMethodNickname,
     category: category,
     active: active,
