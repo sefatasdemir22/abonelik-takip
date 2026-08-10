@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../features/dashboard/presentation/dashboard_screen.dart';
-import 'providers.dart';
+import 'app_shell.dart';
 
 class SubscriptionTrackerApp extends StatelessWidget {
   const SubscriptionTrackerApp({super.key});
@@ -17,6 +16,6 @@ class SubscriptionTrackerApp extends StatelessWidget {
         border: OutlineInputBorder(),
       ),
     ),
-    home: DashboardScreen(controllerProvider: dashboardControllerProvider),
+    home: const AppShell(),
   );
 }

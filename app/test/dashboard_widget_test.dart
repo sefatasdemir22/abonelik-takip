@@ -88,6 +88,46 @@ void main() {
     expect(cadenceSelector.selected, {BillingCadence.monthly});
     expect(find.text('Sonraki ödeme tarihi'), findsOneWidget);
   });
+
+  testWidgets('uygulama shell ana sekmeler arasinda gecis yapar', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    addTearDown(database.close);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(database),
+          notificationSchedulerProvider.overrideWithValue(
+            _FakeNotificationScheduler(),
+          ),
+          clockProvider.overrideWithValue(
+            FakeAppClock(DateTime(2026, 8, 3, 12)),
+          ),
+        ],
+        child: const SubscriptionTrackerApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ana Sayfa'), findsOneWidget);
+    expect(find.text('Abonelikler'), findsOneWidget);
+    expect(find.text('Analiz'), findsOneWidget);
+
+    await tester.tap(find.text('Abonelikler'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Kişisel ve paylaşılan abonelikler burada olacak.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Analiz'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Harcama ve abonelik analizleri burada olacak.'),
+      findsOneWidget,
+    );
+  });
 }
 
 final class _FakeNotificationScheduler implements NotificationScheduler {
