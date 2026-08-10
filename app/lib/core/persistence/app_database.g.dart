@@ -60,6 +60,29 @@ class $RecurringPaymentsTable extends RecurringPayments
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _billingCadenceMeta = const VerificationMeta(
+    'billingCadence',
+  );
+  @override
+  late final GeneratedColumn<String> billingCadence = GeneratedColumn<String>(
+    'billing_cadence',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('monthly'),
+  );
+  static const VerificationMeta _billingMonthMeta = const VerificationMeta(
+    'billingMonth',
+  );
+  @override
+  late final GeneratedColumn<int> billingMonth = GeneratedColumn<int>(
+    'billing_month',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _billingDayMeta = const VerificationMeta(
     'billingDay',
   );
@@ -124,6 +147,8 @@ class $RecurringPaymentsTable extends RecurringPayments
     amountMinor,
     currencyCode,
     nextPaymentDate,
+    billingCadence,
+    billingMonth,
     billingDay,
     paymentMethodNickname,
     category,
@@ -187,6 +212,24 @@ class $RecurringPaymentsTable extends RecurringPayments
       );
     } else if (isInserting) {
       context.missing(_nextPaymentDateMeta);
+    }
+    if (data.containsKey('billing_cadence')) {
+      context.handle(
+        _billingCadenceMeta,
+        billingCadence.isAcceptableOrUnknown(
+          data['billing_cadence']!,
+          _billingCadenceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('billing_month')) {
+      context.handle(
+        _billingMonthMeta,
+        billingMonth.isAcceptableOrUnknown(
+          data['billing_month']!,
+          _billingMonthMeta,
+        ),
+      );
     }
     if (data.containsKey('billing_day')) {
       context.handle(
@@ -259,6 +302,14 @@ class $RecurringPaymentsTable extends RecurringPayments
         DriftSqlType.string,
         data['${effectivePrefix}next_payment_date'],
       )!,
+      billingCadence: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}billing_cadence'],
+      )!,
+      billingMonth: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}billing_month'],
+      ),
       billingDay: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}billing_day'],
@@ -295,6 +346,8 @@ class RecurringPaymentRow extends DataClass
   final int amountMinor;
   final String currencyCode;
   final String nextPaymentDate;
+  final String billingCadence;
+  final int? billingMonth;
   final int billingDay;
   final String? paymentMethodNickname;
   final String category;
@@ -306,6 +359,8 @@ class RecurringPaymentRow extends DataClass
     required this.amountMinor,
     required this.currencyCode,
     required this.nextPaymentDate,
+    required this.billingCadence,
+    this.billingMonth,
     required this.billingDay,
     this.paymentMethodNickname,
     required this.category,
@@ -320,6 +375,10 @@ class RecurringPaymentRow extends DataClass
     map['amount_minor'] = Variable<int>(amountMinor);
     map['currency_code'] = Variable<String>(currencyCode);
     map['next_payment_date'] = Variable<String>(nextPaymentDate);
+    map['billing_cadence'] = Variable<String>(billingCadence);
+    if (!nullToAbsent || billingMonth != null) {
+      map['billing_month'] = Variable<int>(billingMonth);
+    }
     map['billing_day'] = Variable<int>(billingDay);
     if (!nullToAbsent || paymentMethodNickname != null) {
       map['payment_method_nickname'] = Variable<String>(paymentMethodNickname);
@@ -337,6 +396,10 @@ class RecurringPaymentRow extends DataClass
       amountMinor: Value(amountMinor),
       currencyCode: Value(currencyCode),
       nextPaymentDate: Value(nextPaymentDate),
+      billingCadence: Value(billingCadence),
+      billingMonth: billingMonth == null && nullToAbsent
+          ? const Value.absent()
+          : Value(billingMonth),
       billingDay: Value(billingDay),
       paymentMethodNickname: paymentMethodNickname == null && nullToAbsent
           ? const Value.absent()
@@ -358,6 +421,8 @@ class RecurringPaymentRow extends DataClass
       amountMinor: serializer.fromJson<int>(json['amountMinor']),
       currencyCode: serializer.fromJson<String>(json['currencyCode']),
       nextPaymentDate: serializer.fromJson<String>(json['nextPaymentDate']),
+      billingCadence: serializer.fromJson<String>(json['billingCadence']),
+      billingMonth: serializer.fromJson<int?>(json['billingMonth']),
       billingDay: serializer.fromJson<int>(json['billingDay']),
       paymentMethodNickname: serializer.fromJson<String?>(
         json['paymentMethodNickname'],
@@ -376,6 +441,8 @@ class RecurringPaymentRow extends DataClass
       'amountMinor': serializer.toJson<int>(amountMinor),
       'currencyCode': serializer.toJson<String>(currencyCode),
       'nextPaymentDate': serializer.toJson<String>(nextPaymentDate),
+      'billingCadence': serializer.toJson<String>(billingCadence),
+      'billingMonth': serializer.toJson<int?>(billingMonth),
       'billingDay': serializer.toJson<int>(billingDay),
       'paymentMethodNickname': serializer.toJson<String?>(
         paymentMethodNickname,
@@ -392,6 +459,8 @@ class RecurringPaymentRow extends DataClass
     int? amountMinor,
     String? currencyCode,
     String? nextPaymentDate,
+    String? billingCadence,
+    Value<int?> billingMonth = const Value.absent(),
     int? billingDay,
     Value<String?> paymentMethodNickname = const Value.absent(),
     String? category,
@@ -403,6 +472,8 @@ class RecurringPaymentRow extends DataClass
     amountMinor: amountMinor ?? this.amountMinor,
     currencyCode: currencyCode ?? this.currencyCode,
     nextPaymentDate: nextPaymentDate ?? this.nextPaymentDate,
+    billingCadence: billingCadence ?? this.billingCadence,
+    billingMonth: billingMonth.present ? billingMonth.value : this.billingMonth,
     billingDay: billingDay ?? this.billingDay,
     paymentMethodNickname: paymentMethodNickname.present
         ? paymentMethodNickname.value
@@ -424,6 +495,12 @@ class RecurringPaymentRow extends DataClass
       nextPaymentDate: data.nextPaymentDate.present
           ? data.nextPaymentDate.value
           : this.nextPaymentDate,
+      billingCadence: data.billingCadence.present
+          ? data.billingCadence.value
+          : this.billingCadence,
+      billingMonth: data.billingMonth.present
+          ? data.billingMonth.value
+          : this.billingMonth,
       billingDay: data.billingDay.present
           ? data.billingDay.value
           : this.billingDay,
@@ -446,6 +523,8 @@ class RecurringPaymentRow extends DataClass
           ..write('amountMinor: $amountMinor, ')
           ..write('currencyCode: $currencyCode, ')
           ..write('nextPaymentDate: $nextPaymentDate, ')
+          ..write('billingCadence: $billingCadence, ')
+          ..write('billingMonth: $billingMonth, ')
           ..write('billingDay: $billingDay, ')
           ..write('paymentMethodNickname: $paymentMethodNickname, ')
           ..write('category: $category, ')
@@ -462,6 +541,8 @@ class RecurringPaymentRow extends DataClass
     amountMinor,
     currencyCode,
     nextPaymentDate,
+    billingCadence,
+    billingMonth,
     billingDay,
     paymentMethodNickname,
     category,
@@ -477,6 +558,8 @@ class RecurringPaymentRow extends DataClass
           other.amountMinor == this.amountMinor &&
           other.currencyCode == this.currencyCode &&
           other.nextPaymentDate == this.nextPaymentDate &&
+          other.billingCadence == this.billingCadence &&
+          other.billingMonth == this.billingMonth &&
           other.billingDay == this.billingDay &&
           other.paymentMethodNickname == this.paymentMethodNickname &&
           other.category == this.category &&
@@ -490,6 +573,8 @@ class RecurringPaymentsCompanion extends UpdateCompanion<RecurringPaymentRow> {
   final Value<int> amountMinor;
   final Value<String> currencyCode;
   final Value<String> nextPaymentDate;
+  final Value<String> billingCadence;
+  final Value<int?> billingMonth;
   final Value<int> billingDay;
   final Value<String?> paymentMethodNickname;
   final Value<String> category;
@@ -502,6 +587,8 @@ class RecurringPaymentsCompanion extends UpdateCompanion<RecurringPaymentRow> {
     this.amountMinor = const Value.absent(),
     this.currencyCode = const Value.absent(),
     this.nextPaymentDate = const Value.absent(),
+    this.billingCadence = const Value.absent(),
+    this.billingMonth = const Value.absent(),
     this.billingDay = const Value.absent(),
     this.paymentMethodNickname = const Value.absent(),
     this.category = const Value.absent(),
@@ -515,6 +602,8 @@ class RecurringPaymentsCompanion extends UpdateCompanion<RecurringPaymentRow> {
     required int amountMinor,
     required String currencyCode,
     required String nextPaymentDate,
+    this.billingCadence = const Value.absent(),
+    this.billingMonth = const Value.absent(),
     required int billingDay,
     this.paymentMethodNickname = const Value.absent(),
     required String category,
@@ -535,6 +624,8 @@ class RecurringPaymentsCompanion extends UpdateCompanion<RecurringPaymentRow> {
     Expression<int>? amountMinor,
     Expression<String>? currencyCode,
     Expression<String>? nextPaymentDate,
+    Expression<String>? billingCadence,
+    Expression<int>? billingMonth,
     Expression<int>? billingDay,
     Expression<String>? paymentMethodNickname,
     Expression<String>? category,
@@ -548,6 +639,8 @@ class RecurringPaymentsCompanion extends UpdateCompanion<RecurringPaymentRow> {
       if (amountMinor != null) 'amount_minor': amountMinor,
       if (currencyCode != null) 'currency_code': currencyCode,
       if (nextPaymentDate != null) 'next_payment_date': nextPaymentDate,
+      if (billingCadence != null) 'billing_cadence': billingCadence,
+      if (billingMonth != null) 'billing_month': billingMonth,
       if (billingDay != null) 'billing_day': billingDay,
       if (paymentMethodNickname != null)
         'payment_method_nickname': paymentMethodNickname,
@@ -564,6 +657,8 @@ class RecurringPaymentsCompanion extends UpdateCompanion<RecurringPaymentRow> {
     Value<int>? amountMinor,
     Value<String>? currencyCode,
     Value<String>? nextPaymentDate,
+    Value<String>? billingCadence,
+    Value<int?>? billingMonth,
     Value<int>? billingDay,
     Value<String?>? paymentMethodNickname,
     Value<String>? category,
@@ -577,6 +672,8 @@ class RecurringPaymentsCompanion extends UpdateCompanion<RecurringPaymentRow> {
       amountMinor: amountMinor ?? this.amountMinor,
       currencyCode: currencyCode ?? this.currencyCode,
       nextPaymentDate: nextPaymentDate ?? this.nextPaymentDate,
+      billingCadence: billingCadence ?? this.billingCadence,
+      billingMonth: billingMonth ?? this.billingMonth,
       billingDay: billingDay ?? this.billingDay,
       paymentMethodNickname:
           paymentMethodNickname ?? this.paymentMethodNickname,
@@ -604,6 +701,12 @@ class RecurringPaymentsCompanion extends UpdateCompanion<RecurringPaymentRow> {
     }
     if (nextPaymentDate.present) {
       map['next_payment_date'] = Variable<String>(nextPaymentDate.value);
+    }
+    if (billingCadence.present) {
+      map['billing_cadence'] = Variable<String>(billingCadence.value);
+    }
+    if (billingMonth.present) {
+      map['billing_month'] = Variable<int>(billingMonth.value);
     }
     if (billingDay.present) {
       map['billing_day'] = Variable<int>(billingDay.value);
@@ -636,6 +739,8 @@ class RecurringPaymentsCompanion extends UpdateCompanion<RecurringPaymentRow> {
           ..write('amountMinor: $amountMinor, ')
           ..write('currencyCode: $currencyCode, ')
           ..write('nextPaymentDate: $nextPaymentDate, ')
+          ..write('billingCadence: $billingCadence, ')
+          ..write('billingMonth: $billingMonth, ')
           ..write('billingDay: $billingDay, ')
           ..write('paymentMethodNickname: $paymentMethodNickname, ')
           ..write('category: $category, ')
@@ -1285,6 +1390,8 @@ typedef $$RecurringPaymentsTableCreateCompanionBuilder =
       required int amountMinor,
       required String currencyCode,
       required String nextPaymentDate,
+      Value<String> billingCadence,
+      Value<int?> billingMonth,
       required int billingDay,
       Value<String?> paymentMethodNickname,
       required String category,
@@ -1299,6 +1406,8 @@ typedef $$RecurringPaymentsTableUpdateCompanionBuilder =
       Value<int> amountMinor,
       Value<String> currencyCode,
       Value<String> nextPaymentDate,
+      Value<String> billingCadence,
+      Value<int?> billingMonth,
       Value<int> billingDay,
       Value<String?> paymentMethodNickname,
       Value<String> category,
@@ -1380,6 +1489,16 @@ class $$RecurringPaymentsTableFilterComposer
 
   ColumnFilters<String> get nextPaymentDate => $composableBuilder(
     column: $table.nextPaymentDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get billingCadence => $composableBuilder(
+    column: $table.billingCadence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get billingMonth => $composableBuilder(
+    column: $table.billingMonth,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1468,6 +1587,16 @@ class $$RecurringPaymentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get billingCadence => $composableBuilder(
+    column: $table.billingCadence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get billingMonth => $composableBuilder(
+    column: $table.billingMonth,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get billingDay => $composableBuilder(
     column: $table.billingDay,
     builder: (column) => ColumnOrderings(column),
@@ -1521,6 +1650,16 @@ class $$RecurringPaymentsTableAnnotationComposer
 
   GeneratedColumn<String> get nextPaymentDate => $composableBuilder(
     column: $table.nextPaymentDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get billingCadence => $composableBuilder(
+    column: $table.billingCadence,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get billingMonth => $composableBuilder(
+    column: $table.billingMonth,
     builder: (column) => column,
   );
 
@@ -1610,6 +1749,8 @@ class $$RecurringPaymentsTableTableManager
                 Value<int> amountMinor = const Value.absent(),
                 Value<String> currencyCode = const Value.absent(),
                 Value<String> nextPaymentDate = const Value.absent(),
+                Value<String> billingCadence = const Value.absent(),
+                Value<int?> billingMonth = const Value.absent(),
                 Value<int> billingDay = const Value.absent(),
                 Value<String?> paymentMethodNickname = const Value.absent(),
                 Value<String> category = const Value.absent(),
@@ -1622,6 +1763,8 @@ class $$RecurringPaymentsTableTableManager
                 amountMinor: amountMinor,
                 currencyCode: currencyCode,
                 nextPaymentDate: nextPaymentDate,
+                billingCadence: billingCadence,
+                billingMonth: billingMonth,
                 billingDay: billingDay,
                 paymentMethodNickname: paymentMethodNickname,
                 category: category,
@@ -1636,6 +1779,8 @@ class $$RecurringPaymentsTableTableManager
                 required int amountMinor,
                 required String currencyCode,
                 required String nextPaymentDate,
+                Value<String> billingCadence = const Value.absent(),
+                Value<int?> billingMonth = const Value.absent(),
                 required int billingDay,
                 Value<String?> paymentMethodNickname = const Value.absent(),
                 required String category,
@@ -1648,6 +1793,8 @@ class $$RecurringPaymentsTableTableManager
                 amountMinor: amountMinor,
                 currencyCode: currencyCode,
                 nextPaymentDate: nextPaymentDate,
+                billingCadence: billingCadence,
+                billingMonth: billingMonth,
                 billingDay: billingDay,
                 paymentMethodNickname: paymentMethodNickname,
                 category: category,

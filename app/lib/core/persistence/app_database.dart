@@ -10,6 +10,9 @@ class RecurringPayments extends Table {
   IntColumn get amountMinor => integer()();
   TextColumn get currencyCode => text()();
   TextColumn get nextPaymentDate => text()();
+  TextColumn get billingCadence =>
+      text().withDefault(const Constant('monthly'))();
+  IntColumn get billingMonth => integer().nullable()();
   IntColumn get billingDay => integer()();
   TextColumn get paymentMethodNickname => text().nullable()();
   TextColumn get category => text()();
@@ -66,5 +69,21 @@ class AppDatabase extends _$AppDatabase {
       );
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (migrator, from, to) async {
+      if (from == 1 && to == 2) {
+        await migrator.addColumn(
+          recurringPayments,
+          recurringPayments.billingCadence,
+        );
+        await migrator.addColumn(
+          recurringPayments,
+          recurringPayments.billingMonth,
+        );
+      }
+    },
+  );
 }
