@@ -10,3 +10,17 @@
 **/android/local.properties
 coverage/
 
+# Sensitive local files and credentials
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.pem
+*.p12
+*.pfx
+*.key
+id_rsa
+id_rsa.*
+service-account*.json
+
