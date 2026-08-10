@@ -47,8 +47,8 @@ void main() {
         );
     await tester.pumpAndSettle();
 
-    expect(find.text('Sıradaki'), findsOneWidget);
-    expect(find.text('Spotify'), findsNWidgets(2));
+    expect(find.text('Sıradaki ödeme'), findsOneWidget);
+    expect(find.text('Spotify'), findsOneWidget);
     expect(find.textContaining('59,99 TRY'), findsNWidgets(2));
     expect(scheduler.scheduledNames, ['Spotify']);
     expect(scheduler.permissionRequested, isTrue);
@@ -72,7 +72,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Ödeme ekle'));
+    await tester.tap(find.text('Aboneliklerim'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Abonelik ekle'));
     await tester.pumpAndSettle();
 
     expect(find.text('Düzenli ödeme ekle'), findsOneWidget);
@@ -110,23 +112,24 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Ana Sayfa'), findsOneWidget);
-    expect(find.text('Abonelikler'), findsOneWidget);
+    expect(find.text('Ana Sayfa'), findsNWidgets(2));
+    expect(find.text('Aboneliklerim'), findsOneWidget);
+    expect(find.text('Ailem'), findsNWidgets(2));
+    expect(find.text('Hesaplaşma'), findsNWidgets(2));
+    expect(find.text('Profil'), findsOneWidget);
     expect(find.text('Analiz'), findsOneWidget);
 
-    await tester.tap(find.text('Abonelikler'));
+    await tester.tap(find.text('Aboneliklerim'));
     await tester.pumpAndSettle();
-    expect(
-      find.text('Kişisel ve paylaşılan abonelikler burada olacak.'),
-      findsOneWidget,
-    );
+    expect(find.text('Kişisel aboneliklerin'), findsOneWidget);
+    expect(find.text('Paylaşılan'), findsOneWidget);
 
+    await tester.tap(find.text('Ana Sayfa'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Analiz'));
     await tester.pumpAndSettle();
-    expect(
-      find.text('Harcama ve abonelik analizleri burada olacak.'),
-      findsOneWidget,
-    );
+    expect(find.text('Aylık görünüm'), findsOneWidget);
+    expect(find.text('Kategori dağılımı'), findsOneWidget);
   });
 }
 

@@ -1,21 +1,28 @@
 import 'package:flutter/material.dart';
 
 import 'app_shell.dart';
+import 'app_theme.dart';
 
-class SubscriptionTrackerApp extends StatelessWidget {
+class SubscriptionTrackerApp extends StatefulWidget {
   const SubscriptionTrackerApp({super.key});
+
+  @override
+  State<SubscriptionTrackerApp> createState() => _SubscriptionTrackerAppState();
+}
+
+class _SubscriptionTrackerAppState extends State<SubscriptionTrackerApp> {
+  ThemeMode _themeMode = ThemeMode.system;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'Düzenli Ödemelerim',
     debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff315c48)),
-      useMaterial3: true,
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(),
-      ),
+    theme: AppTheme.light,
+    darkTheme: AppTheme.dark,
+    themeMode: _themeMode,
+    home: AppShell(
+      themeMode: _themeMode,
+      onThemeModeChanged: (mode) => setState(() => _themeMode = mode),
     ),
-    home: const AppShell(),
   );
 }
