@@ -27,11 +27,22 @@ final class AndroidNotificationScheduler implements NotificationScheduler {
   Future<void> initialize() async {
     tz_data.initializeTimeZones();
     final zone = await FlutterTimezone.getLocalTimezone();
-    try {
-      tz.setLocalLocation(tz.getLocation(zone.identifier));
-    } on ArgumentError {
-      tz.setLocalLocation(tz.UTC);
+    final identifier = zone.identifier.trim();
+    final normalizedIdentifier = identifier.toLowerCase();
+    tz.Location location;
+    if (normalizedIdentifier == 'gmt' ||
+        normalizedIdentifier == 'utc' ||
+        normalizedIdentifier == 'etc/utc' ||
+        normalizedIdentifier == 'etc/gmt') {
+      location = tz.UTC;
+    } else {
+      try {
+        location = tz.getLocation(identifier);
+      } on tz.LocationNotFoundException {
+        location = tz.UTC;
+      }
     }
+    tz.setLocalLocation(location);
     await _plugin.initialize(
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
