@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../dashboard/presentation/dashboard_controller.dart';
-import '../../dashboard/presentation/dashboard_screen.dart';
+import '../../recurring_payments/application/add_recurring_payment.dart';
+import '../../recurring_payments/presentation/add_recurring_payment_dialog.dart';
 
 enum _SubscriptionView { personal, shared }
 
 class SubscriptionsScreen extends StatefulWidget {
-  const SubscriptionsScreen({required this.controllerProvider, super.key});
+  const SubscriptionsScreen({
+    required this.addRecurringPayment,
+    required this.onPaymentAdded,
+    super.key,
+  });
 
-  final StateNotifierProvider<DashboardController, DashboardState>
-  controllerProvider;
+  final AddRecurringPayment addRecurringPayment;
+  final Future<void> Function() onPaymentAdded;
 
   @override
   State<SubscriptionsScreen> createState() => _SubscriptionsScreenState();
@@ -51,15 +54,21 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       ],
     ),
     floatingActionButton: FloatingActionButton.extended(
-      onPressed: () => showDialog<void>(
-        context: context,
-        builder: (_) =>
-            AddPaymentDialog(controllerProvider: widget.controllerProvider),
-      ),
+      onPressed: _addPayment,
       icon: const Icon(Icons.add),
       label: const Text('Abonelik ekle'),
     ),
   );
+
+  Future<void> _addPayment() async {
+    final added = await showDialog<bool>(
+      context: context,
+      builder: (_) => AddRecurringPaymentDialog(
+        addRecurringPayment: widget.addRecurringPayment,
+      ),
+    );
+    if (added == true) await widget.onPaymentAdded();
+  }
 }
 
 class _SubscriptionSelector extends StatelessWidget {

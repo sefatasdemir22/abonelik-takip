@@ -34,17 +34,16 @@ void main() {
     final container = ProviderScope.containerOf(
       tester.element(find.byType(SubscriptionTrackerApp)),
     );
-    await container
-        .read(dashboardControllerProvider.notifier)
-        .addPayment(
-          name: 'Spotify',
-          amountMinor: 5999,
-          currencyCode: 'TRY',
-          nextPaymentDate: LocalDate(2026, 8, 15),
-          category: SystemCategory.entertainment,
-          billingCadence: BillingCadence.monthly,
-          paymentMethodNickname: 'Bonus kart',
-        );
+    await container.read(addRecurringPaymentProvider)(
+      name: 'Spotify',
+      amountMinor: 5999,
+      currencyCode: 'TRY',
+      nextPaymentDate: LocalDate(2026, 8, 15),
+      category: SystemCategory.entertainment,
+      billingCadence: BillingCadence.monthly,
+      paymentMethodNickname: 'Bonus kart',
+    );
+    await container.read(dashboardControllerProvider.notifier).load();
     await tester.pumpAndSettle();
 
     expect(find.text('Sıradaki ödeme'), findsOneWidget);
@@ -54,7 +53,9 @@ void main() {
     expect(scheduler.permissionRequested, isTrue);
   });
 
-  testWidgets('ödeme ekleme formu çekirdek alanları gösterir', (tester) async {
+  testWidgets('Aboneliklerimden eklenen ödeme Ana Sayfada görünür', (
+    tester,
+  ) async {
     final database = AppDatabase(NativeDatabase.memory());
     addTearDown(database.close);
     await tester.pumpWidget(
@@ -89,6 +90,32 @@ void main() {
     );
     expect(cadenceSelector.selected, {BillingCadence.monthly});
     expect(find.text('Sonraki ödeme tarihi'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('payment-name')),
+      'YouTube Premium',
+    );
+    await tester.enterText(find.byKey(const Key('payment-amount')), '79,99');
+    await tester.ensureVisible(find.text('Sonraki ödeme tarihi'));
+    await tester.tap(find.text('Sonraki ödeme tarihi'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('15').last);
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(DatePickerDialog),
+            matching: find.byType(TextButton),
+          )
+          .last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('save-payment')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Düzenli ödeme ekle'), findsNothing);
+    await tester.tap(find.text('Ana Sayfa'));
+    await tester.pumpAndSettle();
+    expect(find.text('YouTube Premium'), findsOneWidget);
   });
 
   testWidgets('uygulama shell ana sekmeler arasinda gecis yapar', (

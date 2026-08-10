@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/analysis/presentation/analysis_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
@@ -8,7 +9,7 @@ import '../features/settlements/presentation/settlements_screen.dart';
 import '../features/subscriptions/presentation/subscriptions_screen.dart';
 import 'providers.dart';
 
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({
     required this.themeMode,
     required this.onThemeModeChanged,
@@ -19,10 +20,10 @@ class AppShell extends StatefulWidget {
   final ValueChanged<ThemeMode> onThemeModeChanged;
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> {
   static const _homeIndex = 2;
   static const _analysisIndex = 5;
 
@@ -36,7 +37,9 @@ class _AppShellState extends State<AppShell> {
           index: _selectedIndex,
           children: [
             SubscriptionsScreen(
-              controllerProvider: dashboardControllerProvider,
+              addRecurringPayment: ref.watch(addRecurringPaymentProvider),
+              onPaymentAdded: () =>
+                  ref.read(dashboardControllerProvider.notifier).load(),
             ),
             const FamilyScreen(),
             DashboardScreen(
