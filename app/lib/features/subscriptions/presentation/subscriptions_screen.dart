@@ -132,16 +132,22 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   }
 
   Future<void> _addPayment() async {
-    final added = await showDialog<bool>(
+    final result = await showDialog<AddRecurringPaymentResult>(
       context: context,
       builder: (_) => AddRecurringPaymentDialog(
         addRecurringPayment: widget.addRecurringPayment,
       ),
     );
-    if (added != true || !mounted) return;
+    if (result == null || !mounted) return;
     await _loadPayments();
     if (!mounted) return;
     await widget.onPaymentAdded();
+    if (!mounted || !result.notificationFailed) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Abonelik kaydedildi ancak bildirim ayarlanamadı.'),
+      ),
+    );
   }
 }
 

@@ -30,6 +30,7 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
   SystemCategory _category = SystemCategory.entertainment;
   BillingCadence _billingCadence = BillingCadence.monthly;
   bool _saving = false;
+  String? _saveError;
 
   @override
   void dispose() {
@@ -161,6 +162,19 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
                     style: TextStyle(color: Colors.red),
                   ),
                 ),
+              if (_saveError != null) ...[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _saveError!,
+                    key: const Key('save-payment-error'),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -202,17 +216,28 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
       setState(() {});
       return;
     }
-    setState(() => _saving = true);
-    await widget.addRecurringPayment(
-      name: _name.text,
-      amountMinor: parseMinorUnits(_amount.text),
-      currencyCode: _currency.text,
-      nextPaymentDate: _dateValue!,
-      paymentMethodNickname: _paymentMethod.text,
-      category: _category,
-      billingCadence: _billingCadence,
-    );
-    if (mounted) Navigator.pop(context, true);
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    try {
+      final result = await widget.addRecurringPayment(
+        name: _name.text,
+        amountMinor: parseMinorUnits(_amount.text),
+        currencyCode: _currency.text,
+        nextPaymentDate: _dateValue!,
+        paymentMethodNickname: _paymentMethod.text,
+        category: _category,
+        billingCadence: _billingCadence,
+      );
+      if (mounted) Navigator.pop(context, result);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _saveError = 'Abonelik kaydedilemedi. Lütfen tekrar deneyin.';
+      });
+    }
   }
 }
 

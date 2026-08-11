@@ -7,6 +7,16 @@ import '../../notifications/domain/notification_scheduler.dart';
 import '../domain/recurring_payment.dart';
 import '../domain/recurring_payment_repository.dart';
 
+final class AddRecurringPaymentResult {
+  const AddRecurringPaymentResult({
+    required this.payment,
+    required this.notificationFailed,
+  });
+
+  final RecurringPayment payment;
+  final bool notificationFailed;
+}
+
 final class AddRecurringPayment {
   AddRecurringPayment(
     this._repository,
@@ -20,7 +30,7 @@ final class AddRecurringPayment {
   final AppClock _clock;
   final Uuid _uuid;
 
-  Future<RecurringPayment> call({
+  Future<AddRecurringPaymentResult> call({
     required String name,
     required int amountMinor,
     required String currencyCode,
@@ -52,8 +62,18 @@ final class AddRecurringPayment {
       createdAtUtc: _clock.nowUtc(),
     );
     await _repository.add(payment);
-    await _notifications.requestPermission();
-    await _notifications.scheduleFor(payment);
-    return payment;
+    try {
+      await _notifications.requestPermission();
+      await _notifications.scheduleFor(payment);
+      return AddRecurringPaymentResult(
+        payment: payment,
+        notificationFailed: false,
+      );
+    } catch (_) {
+      return AddRecurringPaymentResult(
+        payment: payment,
+        notificationFailed: true,
+      );
+    }
   }
 }

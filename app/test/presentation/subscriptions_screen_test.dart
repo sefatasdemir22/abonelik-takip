@@ -63,21 +63,103 @@ void main() {
 
     expect(find.text('Abonelik ekle'), findsNothing);
   });
+
+  testWidgets('repository failure keeps dialog open and allows retry', (
+    tester,
+  ) async {
+    final repository = _FakeRepository([])..remainingAddFailures = 1;
+    await tester.pumpWidget(_appWithDependencies(repository));
+    await tester.pumpAndSettle();
+    await _openAndFillDialog(tester);
+
+    await tester.tap(find.byKey(const Key('save-payment')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('save-payment-error')), findsOneWidget);
+    final retryButton = tester.widget<FilledButton>(
+      find.byKey(const Key('save-payment')),
+    );
+    expect(retryButton.onPressed, isNotNull);
+
+    await tester.tap(find.byKey(const Key('save-payment')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('save-payment')), findsNothing);
+    expect(repository.addCalls, 2);
+    expect(repository.payments, hasLength(1));
+  });
+
+  testWidgets('notification failure closes dialog and shows warning', (
+    tester,
+  ) async {
+    final repository = _FakeRepository([]);
+    final scheduler = _FakeNotificationScheduler()..failScheduling = true;
+    var refreshCalls = 0;
+    await tester.pumpWidget(
+      _appWithDependencies(
+        repository,
+        scheduler: scheduler,
+        onPaymentAdded: () async => refreshCalls++,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _openAndFillDialog(tester);
+
+    await tester.tap(find.byKey(const Key('save-payment')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('save-payment')), findsNothing);
+    expect(
+      find.text('Abonelik kaydedildi ancak bildirim ayarlanamadı.'),
+      findsOneWidget,
+    );
+    expect(repository.addCalls, 1);
+    expect(repository.payments, hasLength(1));
+    expect(refreshCalls, 1);
+  });
 }
 
 Widget _appWith(List<RecurringPayment> payments) {
   final repository = _FakeRepository(payments);
+  return _appWithDependencies(repository);
+}
+
+Widget _appWithDependencies(
+  _FakeRepository repository, {
+  _FakeNotificationScheduler? scheduler,
+  Future<void> Function()? onPaymentAdded,
+}) {
   return MaterialApp(
     home: SubscriptionsScreen(
       addRecurringPayment: AddRecurringPayment(
         repository,
-        _FakeNotificationScheduler(),
+        scheduler ?? _FakeNotificationScheduler(),
         FakeAppClock(DateTime.utc(2026, 8, 1)),
       ),
       getActiveRecurringPayments: GetActiveRecurringPayments(repository),
-      onPaymentAdded: () async {},
+      onPaymentAdded: onPaymentAdded ?? () async {},
     ),
   );
+}
+
+Future<void> _openAndFillDialog(WidgetTester tester) async {
+  await tester.tap(find.text('Abonelik ekle'));
+  await tester.pumpAndSettle();
+  await tester.enterText(find.byKey(const Key('payment-name')), 'Spotify');
+  await tester.enterText(find.byKey(const Key('payment-amount')), '59,99');
+  await tester.ensureVisible(find.byIcon(Icons.calendar_today));
+  await tester.tap(find.byIcon(Icons.calendar_today));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('15').last);
+  await tester.tap(
+    find
+        .descendant(
+          of: find.byType(DatePickerDialog),
+          matching: find.byType(TextButton),
+        )
+        .last,
+  );
+  await tester.pumpAndSettle();
 }
 
 RecurringPayment _payment({
@@ -99,21 +181,33 @@ RecurringPayment _payment({
 );
 
 final class _FakeRepository implements RecurringPaymentRepository {
-  _FakeRepository(this.payments);
+  _FakeRepository(List<RecurringPayment> payments)
+    : payments = List.of(payments);
 
   final List<RecurringPayment> payments;
+  int remainingAddFailures = 0;
+  int addCalls = 0;
 
   @override
   Future<List<RecurringPayment>> getActive() async => payments;
 
   @override
-  Future<void> add(RecurringPayment payment) async {}
+  Future<void> add(RecurringPayment payment) async {
+    addCalls++;
+    if (remainingAddFailures > 0) {
+      remainingAddFailures--;
+      throw StateError('database unavailable');
+    }
+    payments.add(payment);
+  }
 
   @override
   Future<void> updateNextPaymentDate(String id, String nextDateIso) async {}
 }
 
 final class _FakeNotificationScheduler implements NotificationScheduler {
+  bool failScheduling = false;
+
   @override
   Future<void> cancelForOccurrence(String recurringPaymentId) async {}
 
@@ -124,5 +218,7 @@ final class _FakeNotificationScheduler implements NotificationScheduler {
   Future<void> requestPermission() async {}
 
   @override
-  Future<void> scheduleFor(RecurringPayment payment) async {}
+  Future<void> scheduleFor(RecurringPayment payment) async {
+    if (failScheduling) throw StateError('notifications unavailable');
+  }
 }
