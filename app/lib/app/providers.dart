@@ -8,6 +8,7 @@ import '../features/notifications/domain/notification_scheduler.dart';
 import '../features/payment_occurrences/data/drift_payment_occurrence_repository.dart';
 import '../features/payment_occurrences/domain/payment_occurrence_repository.dart';
 import '../features/recurring_payments/application/add_recurring_payment.dart';
+import '../features/recurring_payments/application/get_active_recurring_payments.dart';
 import '../features/recurring_payments/data/drift_recurring_payment_repository.dart';
 import '../features/recurring_payments/domain/recurring_payment_repository.dart';
 import '../integrations/notifications/android_notification_scheduler.dart';
@@ -51,6 +52,11 @@ final addRecurringPaymentProvider = Provider<AddRecurringPayment>(
     ref.watch(notificationSchedulerProvider),
     ref.watch(clockProvider),
   ),
+);
+
+final getActiveRecurringPaymentsProvider = Provider<GetActiveRecurringPayments>(
+  (ref) =>
+      GetActiveRecurringPayments(ref.watch(recurringPaymentRepositoryProvider)),
 );
 
 final dashboardControllerProvider =

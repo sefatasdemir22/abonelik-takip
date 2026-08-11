@@ -4,7 +4,7 @@ Last updated: 2026-08-10
 
 Current focus: **M2 — Personal subscriptions**
 
-Next concrete task: **M2.1 Aboneliklerim > Kişisel gerçek liste**
+Next concrete task: **M2.2 — Subscription detail screen**
 
 Bu belge “Şimdi ne yapıyoruz, sırada ne var?” sorusunun kanonik cevabıdır. Ürün kapsamı için [PRODUCT.md](PRODUCT.md), uygulama kuralları için [ARCHITECTURE.md](ARCHITECTURE.md) kullanılır.
 
@@ -27,7 +27,7 @@ Bu belge “Şimdi ne yapıyoruz, sırada ne var?” sorusunun kanonik cevabıd�
 
 ## M2 — Personal subscriptions
 
-- [ ] **M2.1 Aboneliklerim > Kişisel gerçek liste**
+- [x] **M2.1 Aboneliklerim > Kişisel gerçek liste**
   - Repository/read data
   - Empty ve populated state
   - Ad

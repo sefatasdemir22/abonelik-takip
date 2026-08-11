@@ -38,6 +38,9 @@ class _AppShellState extends ConsumerState<AppShell> {
           children: [
             SubscriptionsScreen(
               addRecurringPayment: ref.watch(addRecurringPaymentProvider),
+              getActiveRecurringPayments: ref.watch(
+                getActiveRecurringPaymentsProvider,
+              ),
               onPaymentAdded: () =>
                   ref.read(dashboardControllerProvider.notifier).load(),
             ),

@@ -28,9 +28,9 @@ The goal is not to build a general-purpose banking or investment application. Th
 
 ## Current Development Focus
 
-**Roadmap task:** `M2.1 — Aboneliklerim > Kişisel gerçek liste`
+**Roadmap task:** `M2.2 — Subscription detail screen`
 
-The current milestone is focused on turning the personal-subscriptions screen into a real data-backed list and continuing the core subscription-management workflow from there.
+M2.1 is complete: the personal-subscriptions screen now renders the real data-backed list. The next milestone is the personal subscription detail screen.
 
 ## Architecture & Product Docs
 
