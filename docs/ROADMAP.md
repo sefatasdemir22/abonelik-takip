@@ -4,7 +4,7 @@ Last updated: 2026-08-10
 
 Current focus: **M2 — Personal subscriptions**
 
-Next concrete task: **M2.2 — Subscription detail screen**
+Next concrete task: **M2.3 — Edit personal subscription**
 
 Bu belge “Şimdi ne yapıyoruz, sırada ne var?” sorusunun kanonik cevabıdır. Ürün kapsamı için [PRODUCT.md](PRODUCT.md), uygulama kuralları için [ARCHITECTURE.md](ARCHITECTURE.md) kullanılır.
 
@@ -35,7 +35,7 @@ Bu belge “Şimdi ne yapıyoruz, sırada ne var?” sorusunun kanonik cevabıd�
   - Sonraki ödeme tarihi
   - Monthly/yearly cadence
   - Cross-currency toplam yok
-- [ ] **M2.2** Subscription detail screen
+- [x] **M2.2** Subscription detail screen
 - [ ] **M2.3** Edit personal subscription
 - [ ] **M2.4** Deactivate/delete semantics
   - Önce hard delete ile inactive/archive arasında semantic karar ver.

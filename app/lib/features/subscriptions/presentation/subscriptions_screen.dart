@@ -7,6 +7,7 @@ import '../../recurring_payments/application/add_recurring_payment.dart';
 import '../../recurring_payments/application/get_active_recurring_payments.dart';
 import '../../recurring_payments/domain/recurring_payment.dart';
 import '../../recurring_payments/presentation/add_recurring_payment_dialog.dart';
+import 'personal_subscription_detail_screen.dart';
 
 enum _SubscriptionView { personal, shared }
 
@@ -49,18 +50,16 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
           onChanged: (view) => setState(() => _view = view),
         ),
         const SizedBox(height: 24),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          child: _view == _SubscriptionView.personal
-              ? _buildPersonalContent()
-              : const _SubscriptionEmptyPanel(
-                  key: ValueKey('shared'),
-                  icon: Icons.group_outlined,
-                  title: 'Paylaşılan abonelikler',
-                  description:
-                      'Arkadaşlarınla paylaştığın abonelikleri ve ödeme takibini burada göreceksin.',
-                ),
-        ),
+        if (_view == _SubscriptionView.personal)
+          _buildPersonalContent()
+        else
+          const _SubscriptionEmptyPanel(
+            key: ValueKey('shared'),
+            icon: Icons.group_outlined,
+            title: 'Paylaşılan abonelikler',
+            description:
+                'Arkadaşlarınla paylaştığın abonelikleri ve ödeme takibini burada göreceksin.',
+          ),
       ],
     ),
     floatingActionButton: _view == _SubscriptionView.personal
@@ -101,7 +100,10 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       key: const ValueKey('personal-populated'),
       children: [
         for (final payment in _payments) ...[
-          _PersonalSubscriptionCard(payment: payment),
+          _PersonalSubscriptionCard(
+            payment: payment,
+            onTap: () => _openDetail(payment),
+          ),
           const SizedBox(height: 12),
         ],
       ],
@@ -149,66 +151,78 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
       ),
     );
   }
+
+  Future<void> _openDetail(RecurringPayment payment) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => PersonalSubscriptionDetailScreen(payment: payment),
+        ),
+      );
 }
 
 class _PersonalSubscriptionCard extends StatelessWidget {
-  const _PersonalSubscriptionCard({required this.payment});
+  const _PersonalSubscriptionCard({required this.payment, required this.onTap});
 
   final RecurringPayment payment;
+  final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(28),
-      boxShadow: [
-        BoxShadow(
-          color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.07),
-          blurRadius: 14,
-          offset: const Offset(0, 5),
+  Widget build(BuildContext context) => Material(
+    color: Theme.of(context).colorScheme.surfaceContainerLow,
+    elevation: 2,
+    shadowColor: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.07),
+    borderRadius: BorderRadius.circular(28),
+    clipBehavior: Clip.antiAlias,
+    child: InkWell(
+      onTap: onTap,
+      splashFactory: NoSplash.splashFactory,
+      overlayColor: WidgetStateProperty.resolveWith(
+        (states) => Theme.of(context).colorScheme.onSurface.withValues(
+          alpha: states.contains(WidgetState.pressed) ? 0.05 : 0,
         ),
-      ],
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CircleAvatar(
-          radius: 25,
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          child: Text(
-            payment.name.substring(0, 1).toUpperCase(),
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                payment.name,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 25,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: Text(
+                payment.name.substring(0, 1).toUpperCase(),
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(height: 6),
-              Text(
-                '${formatMinorUnits(payment.amountMinor)} ${payment.currencyCode}',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w800,
-                ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    payment.name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${formatMinorUnits(payment.amountMinor)} ${payment.currencyCode}',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(_formatLocalDate(payment.nextPaymentDate)),
+                  const SizedBox(height: 3),
+                  Text(_cadenceLabel(payment.billingSchedule.cadence)),
+                ],
               ),
-              const SizedBox(height: 14),
-              Text(_formatLocalDate(payment.nextPaymentDate)),
-              const SizedBox(height: 3),
-              Text(_cadenceLabel(payment.billingSchedule.cadence)),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     ),
   );
 }
@@ -298,38 +312,41 @@ class _SubscriptionOption extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         overlayColor: const WidgetStatePropertyAll(Colors.transparent),
         onTap: onTap,
-        child: AnimatedContainer(
+        child: AnimatedScale(
           duration: const Duration(milliseconds: 200),
-          constraints: const BoxConstraints(minHeight: 56),
-          decoration: BoxDecoration(
-            color: selected
-                ? Theme.of(context).colorScheme.primaryContainer
-                : Theme.of(context).colorScheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.shadow.withValues(alpha: 0.10),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          scale: selected ? 1 : 0.98,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 56),
+            decoration: BoxDecoration(
+              color: selected
+                  ? Theme.of(context).colorScheme.primaryContainer
+                  : Theme.of(context).colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.shadow.withValues(alpha: 0.10),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

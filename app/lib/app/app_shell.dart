@@ -171,44 +171,50 @@ class _ShellDestination extends StatelessWidget {
           borderRadius: BorderRadius.circular(22),
           overlayColor: const WidgetStatePropertyAll(Colors.transparent),
           onTap: onTap,
-          child: AnimatedContainer(
+          child: AnimatedScale(
             duration: const Duration(milliseconds: 200),
-            constraints: BoxConstraints(minHeight: prominent ? 64 : 56),
-            decoration: BoxDecoration(
-              color: selected
-                  ? Theme.of(context).colorScheme.primaryContainer
-                  : Theme.of(context).colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(prominent ? 25 : 22),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.shadow.withValues(alpha: 0.10),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ]
-                  : null,
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 7),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(selected ? selectedIcon : icon, size: prominent ? 25 : 22),
-                const SizedBox(height: 3),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.fade,
-                  softWrap: false,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+            scale: selected ? 1 : 0.98,
+            child: Container(
+              constraints: BoxConstraints(minHeight: prominent ? 64 : 56),
+              decoration: BoxDecoration(
+                color: selected
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : Theme.of(context).colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(prominent ? 25 : 22),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.shadow.withValues(alpha: 0.10),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : null,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 7),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    selected ? selectedIcon : icon,
+                    size: prominent ? 25 : 22,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 3),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.fade,
+                    softWrap: false,
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

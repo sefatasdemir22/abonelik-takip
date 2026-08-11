@@ -28,9 +28,9 @@ The goal is not to build a general-purpose banking or investment application. Th
 
 ## Current Development Focus
 
-**Roadmap task:** `M2.2 — Subscription detail screen`
+**Roadmap task:** `M2.3 — Edit personal subscription`
 
-M2.1 is complete: the personal-subscriptions screen now renders the real data-backed list. The next milestone is the personal subscription detail screen.
+M2.2 is complete: personal subscription list items now open a real read-only detail screen.
 
 ## Architecture & Product Docs
 

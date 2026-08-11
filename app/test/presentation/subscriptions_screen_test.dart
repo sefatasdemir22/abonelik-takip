@@ -59,8 +59,11 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Paylaşılan'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
+    expect(find.text('Kişisel aboneliklerin'), findsNothing);
+    expect(find.text('Paylaşılan abonelikler'), findsOneWidget);
+    await tester.pumpAndSettle();
     expect(find.text('Abonelik ekle'), findsNothing);
   });
 
@@ -117,6 +120,73 @@ void main() {
     expect(repository.payments, hasLength(1));
     expect(refreshCalls, 1);
   });
+
+  testWidgets('personal card opens detail and back returns to list', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _appWith([
+        _payment(
+          id: 'netflix',
+          name: 'Netflix',
+          amountMinor: 22999,
+          currencyCode: 'TRY',
+          date: LocalDate(2026, 8, 15),
+          schedule: BillingSchedule.monthly(day: 15),
+          paymentMethodNickname: 'Bonus kart',
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Netflix'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Abonelik detayı'), findsOneWidget);
+    expect(find.text('Netflix'), findsOneWidget);
+    expect(find.text('229,99 TRY'), findsOneWidget);
+    expect(find.text('15 Ağu 2026'), findsOneWidget);
+    expect(find.text('Aylık'), findsOneWidget);
+    expect(find.text('Eğlence'), findsOneWidget);
+    expect(find.text('Ödeme yöntemi'), findsOneWidget);
+    expect(find.text('Bonus kart'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Aboneliklerim'), findsOneWidget);
+    expect(find.text('Netflix'), findsOneWidget);
+  });
+
+  testWidgets('USD detail preserves currency and hides blank payment method', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _appWith([
+        _payment(
+          id: 'cloud',
+          name: 'Cloud',
+          amountMinor: 999,
+          currencyCode: 'USD',
+          date: LocalDate(2026, 12, 2),
+          schedule: BillingSchedule.yearly(month: 12, day: 2),
+          category: SystemCategory.software,
+          paymentMethodNickname: '   ',
+        ),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Cloud'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('9,99 USD'), findsOneWidget);
+    expect(find.text('Yıllık'), findsOneWidget);
+    expect(find.text('Yazılım'), findsOneWidget);
+    expect(find.text('Ödeme yöntemi'), findsNothing);
+    expect(find.textContaining('TRY'), findsNothing);
+    expect(find.textContaining('Toplam'), findsNothing);
+  });
 }
 
 Widget _appWith(List<RecurringPayment> payments) {
@@ -169,6 +239,8 @@ RecurringPayment _payment({
   required String currencyCode,
   required LocalDate date,
   required BillingSchedule schedule,
+  SystemCategory category = SystemCategory.entertainment,
+  String? paymentMethodNickname,
 }) => RecurringPayment(
   id: id,
   name: name,
@@ -176,7 +248,8 @@ RecurringPayment _payment({
   currencyCode: currencyCode,
   nextPaymentDate: date,
   billingSchedule: schedule,
-  category: SystemCategory.entertainment,
+  paymentMethodNickname: paymentMethodNickname,
+  category: category,
   createdAtUtc: DateTime.utc(2026, 8, 1),
 );
 

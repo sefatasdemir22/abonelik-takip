@@ -20,6 +20,7 @@ class _SubscriptionTrackerAppState extends State<SubscriptionTrackerApp> {
     theme: AppTheme.light,
     darkTheme: AppTheme.dark,
     themeMode: _themeMode,
+    themeAnimationDuration: Duration.zero,
     home: AppShell(
       themeMode: _themeMode,
       onThemeModeChanged: (mode) => setState(() => _themeMode = mode),
