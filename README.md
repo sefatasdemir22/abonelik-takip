@@ -23,14 +23,18 @@ The goal is not to build a general-purpose banking or investment application. Th
 - monthly and yearly `BillingSchedule`
 - Drift-based local persistence
 - recurring-payment creation flow
+- personal subscription list, detail and persistent edit flows
+- controlled personal-subscription currencies: TRY/USD/EUR/GBP
 - five-section application navigation
 - light and dark visual foundations
 
 ## Current Development Focus
 
-**Roadmap task:** `M2.3 — Edit personal subscription`
+**Completed:** `M2.3 — Edit personal subscription`
 
-M2.2 is complete: personal subscription list items now open a real read-only detail screen.
+Personal subscriptions can be edited with updates reflected in the detail and sorted list. The list refreshes when its tab becomes active again.
+
+**Immediate next task:** recurring-reminder recurrence correctness. Reminders currently cover only the current due date; advancing to the next payment cycle does not yet reschedule them. This separate correctness fix comes before `M2.4 — Deactivate/delete semantics`.
 
 ## Architecture & Product Docs
 

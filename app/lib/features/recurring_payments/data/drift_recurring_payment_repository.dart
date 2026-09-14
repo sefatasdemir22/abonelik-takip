@@ -41,6 +41,31 @@ final class DriftRecurringPaymentRepository
   }
 
   @override
+  Future<void> update(RecurringPayment payment) async {
+    final affected =
+        await (_database.update(
+          _database.recurringPayments,
+        )..where((row) => row.id.equals(payment.id))).write(
+          RecurringPaymentsCompanion(
+            name: Value(payment.name),
+            amountMinor: Value(payment.amountMinor),
+            currencyCode: Value(payment.currencyCode),
+            nextPaymentDate: Value(payment.nextPaymentDate.toIso8601String()),
+            billingCadence: Value(payment.billingSchedule.cadence.name),
+            billingMonth: Value(payment.billingSchedule.anchorMonth),
+            billingDay: Value(payment.billingSchedule.anchorDay),
+            paymentMethodNickname: Value(payment.paymentMethodNickname),
+            category: Value(payment.category.name),
+            active: Value(payment.active),
+            createdAtUtc: Value(payment.createdAtUtc),
+          ),
+        );
+    if (affected == 0) {
+      throw StateError('Recurring payment ${payment.id} was not found.');
+    }
+  }
+
+  @override
   Future<void> updateNextPaymentDate(String id, String nextDateIso) async {
     await (_database.update(_database.recurringPayments)
           ..where((row) => row.id.equals(id)))

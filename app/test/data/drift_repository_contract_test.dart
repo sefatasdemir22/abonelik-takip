@@ -67,6 +67,84 @@ void main() {
     expect(schedule.anchorDay, 31);
   });
 
+  test('full recurring update persists aggregate fields', () async {
+    final original = _payment(
+      id: 'editable',
+      date: LocalDate(2026, 8, 15),
+      paymentMethodNickname: 'Bonus',
+    );
+    await recurring.add(original);
+    final persistedOriginal = (await recurring.getActive()).single;
+    final updated = RecurringPayment(
+      id: persistedOriginal.id,
+      name: 'Updated payment',
+      amountMinor: 4599,
+      currencyCode: 'USD',
+      nextPaymentDate: LocalDate(2026, 10, 20),
+      billingSchedule: BillingSchedule.yearly(month: 10, day: 20),
+      category: SystemCategory.communication,
+      active: persistedOriginal.active,
+      createdAtUtc: persistedOriginal.createdAtUtc,
+    );
+
+    await recurring.update(updated);
+
+    final persisted = (await recurring.getActive()).single;
+    expect(persisted.id, persistedOriginal.id);
+    expect(persisted.name, updated.name);
+    expect(persisted.amountMinor, updated.amountMinor);
+    expect(persisted.currencyCode, updated.currencyCode);
+    expect(persisted.nextPaymentDate, updated.nextPaymentDate);
+    expect(persisted.billingSchedule, updated.billingSchedule);
+    expect(persistedOriginal.paymentMethodNickname, 'Bonus');
+    expect(persisted.paymentMethodNickname, isNull);
+    expect(persisted.category, updated.category);
+    expect(persisted.active, persistedOriginal.active);
+    expect(persisted.createdAtUtc, persistedOriginal.createdAtUtc);
+  });
+
+  test('full recurring update fails when payment does not exist', () async {
+    final existing = _payment(id: 'existing', date: LocalDate(2026, 8, 15));
+    await recurring.add(existing);
+
+    await expectLater(
+      recurring.update(_payment(id: 'missing', date: LocalDate(2026, 9, 15))),
+      throwsA(isA<StateError>()),
+    );
+
+    final persisted = (await recurring.getActive()).single;
+    expect(persisted.id, existing.id);
+    expect(persisted.nextPaymentDate, existing.nextPaymentDate);
+  });
+
+  test(
+    'recurring update does not mutate existing occurrence snapshot',
+    () async {
+      final original = _payment(id: 'snapshot', date: LocalDate(2026, 8, 3));
+      await recurring.add(original);
+      await occurrences.materializeDueOccurrences(LocalDate(2026, 8, 3));
+      await recurring.update(
+        RecurringPayment(
+          id: original.id,
+          name: 'Updated payment',
+          amountMinor: 999,
+          currencyCode: 'EUR',
+          nextPaymentDate: LocalDate(2026, 9, 3),
+          billingSchedule: BillingSchedule.monthly(day: 3),
+          category: original.category,
+          active: original.active,
+          createdAtUtc: original.createdAtUtc,
+        ),
+      );
+
+      final occurrence = (await occurrences.getAwaitingConfirmation()).single;
+      expect(occurrence.paymentName, original.name);
+      expect(occurrence.expectedAmountMinor, original.amountMinor);
+      expect(occurrence.currencyCode, original.currencyCode);
+      expect(occurrence.expectedDate, original.nextPaymentDate);
+    },
+  );
+
   test('yearly February 29 occurrence sonrasi February 28 olur', () async {
     await recurring.add(
       _payment(
@@ -116,6 +194,7 @@ RecurringPayment _payment({
   required LocalDate date,
   String currency = 'TRY',
   BillingSchedule? schedule,
+  String? paymentMethodNickname,
 }) => RecurringPayment(
   id: id,
   name: 'Test ödeme',
@@ -123,6 +202,7 @@ RecurringPayment _payment({
   currencyCode: currency,
   nextPaymentDate: date,
   billingSchedule: schedule ?? BillingSchedule.monthly(day: date.day),
+  paymentMethodNickname: paymentMethodNickname,
   category: SystemCategory.software,
   createdAtUtc: DateTime.utc(2026, 8, 1),
 );

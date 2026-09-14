@@ -1,10 +1,12 @@
 # Ürün ve Geliştirme Yol Haritası
 
-Last updated: 2026-08-10
+Last updated: 2026-09-14
 
 Current focus: **M2 — Personal subscriptions**
 
-Next concrete task: **M2.3 — Edit personal subscription**
+Next concrete task: **P0 — Recurring-reminder recurrence correctness**
+
+Occurrence materialization `RecurringPayment.nextPaymentDate` değerini ilerlettiğinde sonraki dönemin bildirimleri yeniden planlanmıyor. Bu açık hata, M2.4 öncesinde ayrı bir correctness batch'inde ele alınır; ardından M2.4 devam eder.
 
 Bu belge “Şimdi ne yapıyoruz, sırada ne var?” sorusunun kanonik cevabıdır. Ürün kapsamı için [PRODUCT.md](PRODUCT.md), uygulama kuralları için [ARCHITECTURE.md](ARCHITECTURE.md) kullanılır.
 
@@ -36,7 +38,10 @@ Bu belge “Şimdi ne yapıyoruz, sırada ne var?” sorusunun kanonik cevabıd�
   - Monthly/yearly cadence
   - Cross-currency toplam yok
 - [x] **M2.2** Subscription detail screen
-- [ ] **M2.3** Edit personal subscription
+- [x] **M2.3** Edit personal subscription
+  - Kalıcı düzenleme; detay ve liste güncellemesi, vade değişikliğinde artan tarih sırasının korunması
+  - Kontrollü TRY/USD/EUR/GBP seçimi ve mevcut desteklenmeyen para birimlerinin güvenli düzenlenmesi
+  - Aboneliklerim sekmesi yeniden aktif olduğunda repository üzerinden liste yenileme
 - [ ] **M2.4** Deactivate/delete semantics
   - Önce hard delete ile inactive/archive arasında semantic karar ver.
   - Geçmiş occurrence kayıtları korunmalıdır.

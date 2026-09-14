@@ -4,39 +4,59 @@ import 'package:intl/intl.dart';
 import '../../../core/domain/billing_schedule.dart';
 import '../../../core/domain/local_date.dart';
 import '../../../core/domain/money.dart';
-import '../application/add_recurring_payment.dart';
-import '../domain/recurring_payment.dart';
+import '../../recurring_payments/application/update_recurring_payment.dart';
+import '../../recurring_payments/domain/recurring_payment.dart';
+import 'supported_currencies.dart';
 
-class AddRecurringPaymentDialog extends StatefulWidget {
-  const AddRecurringPaymentDialog({
-    required this.addRecurringPayment,
+class EditRecurringPaymentDialog extends StatefulWidget {
+  const EditRecurringPaymentDialog({
+    required this.payment,
+    required this.updateRecurringPayment,
     super.key,
   });
 
-  final AddRecurringPayment addRecurringPayment;
+  final RecurringPayment payment;
+  final UpdateRecurringPayment updateRecurringPayment;
 
   @override
-  State<AddRecurringPaymentDialog> createState() =>
-      _AddRecurringPaymentDialogState();
+  State<EditRecurringPaymentDialog> createState() =>
+      _EditRecurringPaymentDialogState();
 }
 
-class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
+class _EditRecurringPaymentDialogState
+    extends State<EditRecurringPaymentDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _name = TextEditingController();
-  final _amount = TextEditingController();
-  final _currency = TextEditingController(text: 'TRY');
-  final _paymentMethod = TextEditingController();
-  LocalDate? _dateValue;
-  SystemCategory _category = SystemCategory.entertainment;
-  BillingCadence _billingCadence = BillingCadence.monthly;
+  late final TextEditingController _name;
+  late final TextEditingController _amount;
+  late final TextEditingController _paymentMethod;
+  late LocalDate _dateValue;
+  late String _currencyCode;
+  late SystemCategory _category;
+  late BillingCadence _billingCadence;
   bool _saving = false;
   String? _saveError;
+
+  @override
+  void initState() {
+    super.initState();
+    final payment = widget.payment;
+    _name = TextEditingController(text: payment.name);
+    _amount = TextEditingController(
+      text: formatMinorUnits(payment.amountMinor),
+    );
+    _paymentMethod = TextEditingController(
+      text: payment.paymentMethodNickname ?? '',
+    );
+    _dateValue = payment.nextPaymentDate;
+    _currencyCode = payment.currencyCode.trim().toUpperCase();
+    _category = payment.category;
+    _billingCadence = payment.billingSchedule.cadence;
+  }
 
   @override
   void dispose() {
     _name.dispose();
     _amount.dispose();
-    _currency.dispose();
     _paymentMethod.dispose();
     super.dispose();
   }
@@ -47,7 +67,7 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
     titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
     contentPadding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
     actionsPadding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-    title: const Text('Düzenli ödeme ekle'),
+    title: const Text('Aboneliği düzenle'),
     content: SizedBox(
       width: 420,
       child: Form(
@@ -57,7 +77,7 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
-                key: const Key('payment-name'),
+                key: const Key('edit-payment-name'),
                 controller: _name,
                 decoration: const InputDecoration(labelText: 'Ad'),
                 validator: (value) => value == null || value.trim().isEmpty
@@ -66,7 +86,7 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
               ),
               const SizedBox(height: 12),
               TextFormField(
-                key: const Key('payment-amount'),
+                key: const Key('edit-payment-amount'),
                 controller: _amount,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -84,17 +104,11 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
                 },
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                key: const Key('payment-currency'),
-                controller: _currency,
-                textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(
-                  labelText: 'Para birimi kodu',
-                ),
-                validator: (value) =>
-                    RegExp(r'^[A-Za-z]{3}$').hasMatch(value?.trim() ?? '')
-                    ? null
-                    : 'Üç harfli kod girin.',
+              CurrencySelector(
+                value: _currencyCode,
+                legacyCurrencyCode: widget.payment.currencyCode,
+                onChanged: (currency) =>
+                    setState(() => _currencyCode = currency),
               ),
               const SizedBox(height: 12),
               SegmentedButton<BillingCadence>(
@@ -139,6 +153,7 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
               ),
               const SizedBox(height: 12),
               TextFormField(
+                key: const Key('edit-payment-method'),
                 controller: _paymentMethod,
                 decoration: const InputDecoration(
                   labelText: 'Ödeme yöntemi takma adı (isteğe bağlı)',
@@ -148,27 +163,17 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Sonraki ödeme tarihi'),
-                subtitle: Text(
-                  _dateValue == null ? 'Tarih seçin' : _date(_dateValue!),
-                ),
+                subtitle: Text(_date(_dateValue)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: _pickDate,
               ),
-              if (_dateValue == null)
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Tarih zorunludur.',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
               if (_saveError != null) ...[
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     _saveError!,
-                    key: const Key('save-payment-error'),
+                    key: const Key('edit-payment-error'),
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -186,7 +191,7 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
         child: const Text('Vazgeç'),
       ),
       FilledButton(
-        key: const Key('save-payment'),
+        key: const Key('save-edit-payment'),
         onPressed: _saving ? null : _save,
         child: _saving
             ? const SizedBox.square(
@@ -202,7 +207,7 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
     final now = DateTime.now();
     final selected = await showDatePicker(
       context: context,
-      initialDate: _dateValue?.atLocalTime() ?? now,
+      initialDate: _dateValue.atLocalTime(),
       firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 10),
     );
@@ -212,20 +217,18 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate() || _dateValue == null) {
-      setState(() {});
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
     setState(() {
       _saving = true;
       _saveError = null;
     });
     try {
-      final result = await widget.addRecurringPayment(
+      final result = await widget.updateRecurringPayment(
+        existing: widget.payment,
         name: _name.text,
         amountMinor: parseMinorUnits(_amount.text),
-        currencyCode: _currency.text,
-        nextPaymentDate: _dateValue!,
+        currencyCode: _currencyCode,
+        nextPaymentDate: _dateValue,
         paymentMethodNickname: _paymentMethod.text,
         category: _category,
         billingCadence: _billingCadence,
@@ -235,7 +238,7 @@ class _AddRecurringPaymentDialogState extends State<AddRecurringPaymentDialog> {
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _saveError = 'Abonelik kaydedilemedi. Lütfen tekrar deneyin.';
+        _saveError = 'Abonelik güncellenemedi. Lütfen tekrar deneyin.';
       });
     }
   }

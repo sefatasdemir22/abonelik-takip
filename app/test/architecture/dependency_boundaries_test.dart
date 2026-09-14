@@ -56,4 +56,50 @@ void main() {
       }
     }
   });
+
+  test('feature presentation başka feature presentation import etmez', () {
+    final files = Directory('lib/features')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((file) => file.path.endsWith('.dart'));
+    final featurePresentation = RegExp(r'/features/([^/]+)/presentation/');
+    final imports = RegExp(
+      r'''^\s*import\s+['"]([^'"]+)['"]''',
+      multiLine: true,
+    );
+
+    for (final file in files) {
+      final sourcePath = file.absolute.path.replaceAll('\\', '/');
+      final sourceFeature = featurePresentation
+          .firstMatch(sourcePath)
+          ?.group(1);
+      if (sourceFeature == null) continue;
+
+      for (final match in imports.allMatches(file.readAsStringSync())) {
+        final importPath = match.group(1)!;
+        String targetPath;
+        if (importPath.startsWith('package:abonelik_takip/')) {
+          targetPath = File(
+            'lib/${Uri.parse(importPath).path}',
+          ).absolute.path.replaceAll('\\', '/');
+        } else if (importPath.startsWith('.')) {
+          targetPath = File.fromUri(
+            file.absolute.uri.resolve(importPath),
+          ).absolute.path.replaceAll('\\', '/');
+        } else {
+          continue;
+        }
+
+        final targetFeature = featurePresentation
+            .firstMatch(targetPath)
+            ?.group(1);
+        if (targetFeature == null) continue;
+        expect(
+          targetFeature,
+          sourceFeature,
+          reason: '${file.path} imports $importPath',
+        );
+      }
+    }
+  });
 }

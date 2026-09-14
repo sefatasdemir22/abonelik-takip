@@ -6,6 +6,7 @@ import '../../../core/domain/local_date.dart';
 import '../../notifications/domain/notification_scheduler.dart';
 import '../domain/recurring_payment.dart';
 import '../domain/recurring_payment_repository.dart';
+import 'supported_recurring_payment_currencies.dart';
 
 final class AddRecurringPaymentResult {
   const AddRecurringPaymentResult({
@@ -39,6 +40,14 @@ final class AddRecurringPayment {
     required BillingCadence billingCadence,
     String? paymentMethodNickname,
   }) async {
+    final normalizedCurrency = currencyCode.trim().toUpperCase();
+    if (!isSupportedRecurringPaymentCurrency(normalizedCurrency)) {
+      throw ArgumentError.value(
+        currencyCode,
+        'currencyCode',
+        'Unsupported recurring-payment currency.',
+      );
+    }
     final billingSchedule = switch (billingCadence) {
       BillingCadence.monthly => BillingSchedule.monthly(
         day: nextPaymentDate.day,
@@ -52,7 +61,7 @@ final class AddRecurringPayment {
       id: _uuid.v4(),
       name: name.trim(),
       amountMinor: amountMinor,
-      currencyCode: currencyCode.trim().toUpperCase(),
+      currencyCode: normalizedCurrency,
       nextPaymentDate: nextPaymentDate,
       billingSchedule: billingSchedule,
       paymentMethodNickname: paymentMethodNickname?.trim().isEmpty == true

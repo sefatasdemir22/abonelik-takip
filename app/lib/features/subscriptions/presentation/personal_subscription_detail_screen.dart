@@ -3,18 +3,53 @@ import 'package:flutter/material.dart';
 import '../../../core/domain/billing_schedule.dart';
 import '../../../core/domain/local_date.dart';
 import '../../../core/domain/money.dart';
+import '../../recurring_payments/application/update_recurring_payment.dart';
 import '../../recurring_payments/domain/recurring_payment.dart';
+import 'edit_recurring_payment_dialog.dart';
 
-class PersonalSubscriptionDetailScreen extends StatelessWidget {
-  const PersonalSubscriptionDetailScreen({required this.payment, super.key});
+class PersonalSubscriptionDetailScreen extends StatefulWidget {
+  const PersonalSubscriptionDetailScreen({
+    required this.payment,
+    required this.updateRecurringPayment,
+    required this.onPaymentUpdated,
+    super.key,
+  });
 
   final RecurringPayment payment;
+  final UpdateRecurringPayment updateRecurringPayment;
+  final Future<void> Function(RecurringPayment payment) onPaymentUpdated;
+
+  @override
+  State<PersonalSubscriptionDetailScreen> createState() =>
+      _PersonalSubscriptionDetailScreenState();
+}
+
+class _PersonalSubscriptionDetailScreenState
+    extends State<PersonalSubscriptionDetailScreen> {
+  late RecurringPayment _payment;
+
+  @override
+  void initState() {
+    super.initState();
+    _payment = widget.payment;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final payment = _payment;
     final paymentMethod = payment.paymentMethodNickname?.trim();
     return Scaffold(
-      appBar: AppBar(title: const Text('Abonelik detayı')),
+      appBar: AppBar(
+        title: const Text('Abonelik detayı'),
+        actions: [
+          TextButton.icon(
+            onPressed: _edit,
+            icon: const Icon(Icons.edit_outlined),
+            label: const Text('Düzenle'),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
@@ -50,6 +85,27 @@ class PersonalSubscriptionDetailScreen extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _edit() async {
+    final result = await showDialog<UpdateRecurringPaymentResult>(
+      context: context,
+      builder: (_) => EditRecurringPaymentDialog(
+        payment: _payment,
+        updateRecurringPayment: widget.updateRecurringPayment,
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() => _payment = result.payment);
+    await widget.onPaymentUpdated(result.payment);
+    if (!mounted || !result.notificationFailed) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Abonelik güncellendi ancak bildirim yeniden ayarlanamadı.',
+        ),
       ),
     );
   }

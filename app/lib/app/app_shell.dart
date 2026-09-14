@@ -37,11 +37,13 @@ class _AppShellState extends ConsumerState<AppShell> {
           index: _selectedIndex,
           children: [
             SubscriptionsScreen(
+              isActive: _selectedIndex == 0,
               addRecurringPayment: ref.watch(addRecurringPaymentProvider),
               getActiveRecurringPayments: ref.watch(
                 getActiveRecurringPaymentsProvider,
               ),
-              onPaymentAdded: () =>
+              updateRecurringPayment: ref.watch(updateRecurringPaymentProvider),
+              onPaymentsChanged: () =>
                   ref.read(dashboardControllerProvider.notifier).load(),
             ),
             const FamilyScreen(),

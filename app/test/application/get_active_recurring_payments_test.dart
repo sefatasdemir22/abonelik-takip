@@ -28,6 +28,9 @@ final class _FakeRepository implements RecurringPaymentRepository {
   }
 
   @override
+  Future<void> update(RecurringPayment payment) async {}
+
+  @override
   Future<void> add(RecurringPayment payment) async {}
 
   @override

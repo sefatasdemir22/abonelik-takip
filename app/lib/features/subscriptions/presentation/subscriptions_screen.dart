@@ -5,23 +5,28 @@ import '../../../core/domain/local_date.dart';
 import '../../../core/domain/money.dart';
 import '../../recurring_payments/application/add_recurring_payment.dart';
 import '../../recurring_payments/application/get_active_recurring_payments.dart';
+import '../../recurring_payments/application/update_recurring_payment.dart';
 import '../../recurring_payments/domain/recurring_payment.dart';
-import '../../recurring_payments/presentation/add_recurring_payment_dialog.dart';
+import 'add_recurring_payment_dialog.dart';
 import 'personal_subscription_detail_screen.dart';
 
 enum _SubscriptionView { personal, shared }
 
 class SubscriptionsScreen extends StatefulWidget {
   const SubscriptionsScreen({
+    required this.isActive,
     required this.addRecurringPayment,
     required this.getActiveRecurringPayments,
-    required this.onPaymentAdded,
+    required this.updateRecurringPayment,
+    required this.onPaymentsChanged,
     super.key,
   });
 
+  final bool isActive;
   final AddRecurringPayment addRecurringPayment;
   final GetActiveRecurringPayments getActiveRecurringPayments;
-  final Future<void> Function() onPaymentAdded;
+  final UpdateRecurringPayment updateRecurringPayment;
+  final Future<void> Function() onPaymentsChanged;
 
   @override
   State<SubscriptionsScreen> createState() => _SubscriptionsScreenState();
@@ -37,6 +42,14 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   void initState() {
     super.initState();
     _loadPayments();
+  }
+
+  @override
+  void didUpdateWidget(covariant SubscriptionsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) {
+      _loadPayments();
+    }
   }
 
   @override
@@ -143,7 +156,7 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
     if (result == null || !mounted) return;
     await _loadPayments();
     if (!mounted) return;
-    await widget.onPaymentAdded();
+    await widget.onPaymentsChanged();
     if (!mounted || !result.notificationFailed) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -155,9 +168,28 @@ class _SubscriptionsScreenState extends State<SubscriptionsScreen> {
   Future<void> _openDetail(RecurringPayment payment) =>
       Navigator.of(context).push<void>(
         MaterialPageRoute(
-          builder: (_) => PersonalSubscriptionDetailScreen(payment: payment),
+          builder: (_) => PersonalSubscriptionDetailScreen(
+            payment: payment,
+            updateRecurringPayment: widget.updateRecurringPayment,
+            onPaymentUpdated: _paymentUpdated,
+          ),
         ),
       );
+
+  Future<void> _paymentUpdated(RecurringPayment payment) async {
+    if (!mounted) return;
+    setState(() {
+      _payments =
+          [
+            for (final current in _payments)
+              if (current.id == payment.id) payment else current,
+          ]..sort(
+            (left, right) =>
+                left.nextPaymentDate.compareTo(right.nextPaymentDate),
+          );
+    });
+    await widget.onPaymentsChanged();
+  }
 }
 
 class _PersonalSubscriptionCard extends StatelessWidget {

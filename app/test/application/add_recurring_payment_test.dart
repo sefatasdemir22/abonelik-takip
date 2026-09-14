@@ -90,12 +90,35 @@ void main() {
     expect(repository.added, same(result.payment));
     expect(notifications.scheduled, isNull);
   });
+
+  test('supported currency whitespace ile canonicalize edilir', () async {
+    final result = await _add(addRecurringPayment, currencyCode: ' usd ');
+
+    expect(result.payment.currencyCode, 'USD');
+    expect(repository.addCalls, 1);
+  });
+
+  test('unsupported currency persistence öncesi reddedilir', () async {
+    for (final currencyCode in ['CHF', 'ABC']) {
+      await expectLater(
+        _add(addRecurringPayment, currencyCode: currencyCode),
+        throwsArgumentError,
+      );
+    }
+
+    expect(repository.addCalls, 0);
+    expect(notifications.permissionRequested, isFalse);
+    expect(notifications.scheduled, isNull);
+  });
 }
 
-Future<AddRecurringPaymentResult> _add(AddRecurringPayment useCase) => useCase(
+Future<AddRecurringPaymentResult> _add(
+  AddRecurringPayment useCase, {
+  String currencyCode = 'TRY',
+}) => useCase(
   name: 'Spotify',
   amountMinor: 5999,
-  currencyCode: 'TRY',
+  currencyCode: currencyCode,
   nextPaymentDate: LocalDate(2026, 8, 15),
   category: SystemCategory.entertainment,
   billingCadence: BillingCadence.monthly,
@@ -116,6 +139,9 @@ final class _FakeRecurringPaymentRepository
 
   @override
   Future<List<RecurringPayment>> getActive() async => const [];
+
+  @override
+  Future<void> update(RecurringPayment payment) async {}
 
   @override
   Future<void> updateNextPaymentDate(String id, String nextDateIso) async {}
