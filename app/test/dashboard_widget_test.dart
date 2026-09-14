@@ -4,6 +4,9 @@ import 'package:abonelik_takip/core/domain/app_clock.dart';
 import 'package:abonelik_takip/core/domain/billing_schedule.dart';
 import 'package:abonelik_takip/core/domain/local_date.dart';
 import 'package:abonelik_takip/core/persistence/app_database.dart';
+import 'package:abonelik_takip/features/dashboard/presentation/dashboard_controller.dart';
+import 'package:abonelik_takip/features/payment_occurrences/data/drift_payment_occurrence_repository.dart';
+import 'package:abonelik_takip/features/recurring_payments/data/drift_recurring_payment_repository.dart';
 import 'package:abonelik_takip/features/notifications/domain/notification_scheduler.dart';
 import 'package:abonelik_takip/features/recurring_payments/domain/recurring_payment.dart';
 import 'package:drift/native.dart';
@@ -12,6 +15,81 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  group('dashboard reminder repair', () {
+    late AppDatabase database;
+    late DriftRecurringPaymentRepository repository;
+    late DashboardController controller;
+    late _FakeNotificationScheduler scheduler;
+
+    setUp(() {
+      database = AppDatabase(NativeDatabase.memory());
+      repository = DriftRecurringPaymentRepository(database);
+      scheduler = _FakeNotificationScheduler();
+      controller = DashboardController(
+        repository,
+        DriftPaymentOccurrenceRepository(database, repository),
+        scheduler,
+        FakeAppClock(DateTime(2026, 8, 3, 12)),
+      );
+    });
+
+    tearDown(() async {
+      controller.dispose();
+      await database.close();
+    });
+
+    for (final paid in [true, false]) {
+      test(
+        'load repairs next cycle after ${paid ? "paid" : "skipped"}',
+        () async {
+          await repository.add(_payment('Spotify', LocalDate(2026, 8, 3)));
+          await controller.load();
+
+          final nextDate = LocalDate(2026, 9, 3);
+          expect(controller.state.error, isNull);
+          expect(controller.state.payments.single.nextPaymentDate, nextDate);
+          expect(scheduler.scheduledPayments.single.nextPaymentDate, nextDate);
+          expect(scheduler.events, ['schedule:Spotify']);
+          expect(scheduler.permissionRequested, isFalse);
+
+          final occurrence = controller.state.awaiting.single;
+          if (paid) {
+            await controller.markPaid(occurrence);
+          } else {
+            await controller.markSkipped(occurrence);
+          }
+
+          expect(controller.state.awaiting, isEmpty);
+          expect(scheduler.events, [
+            'schedule:Spotify',
+            'cancel:Spotify',
+            'schedule:Spotify',
+          ]);
+          expect(scheduler.scheduledPayments.last.nextPaymentDate, nextDate);
+          expect(scheduler.permissionRequested, isFalse);
+        },
+      );
+    }
+
+    test(
+      'one scheduling failure does not block data or other payments',
+      () async {
+        await repository.add(_payment('Spotify', LocalDate(2026, 8, 10)));
+        await repository.add(_payment('Netflix', LocalDate(2026, 8, 15)));
+        scheduler.failForId = 'Spotify';
+
+        await controller.load();
+
+        expect(controller.state.loading, isFalse);
+        expect(controller.state.error, isNull);
+        expect(controller.state.payments, hasLength(2));
+        expect(controller.state.summaries.single.remainingPlannedMinor, 11998);
+        expect(scheduler.events, ['schedule:Spotify', 'schedule:Netflix']);
+        expect(scheduler.permissionRequested, isFalse);
+      },
+    );
+  });
+
   testWidgets('eklenen ödeme dashboard Sıradaki kartında görünür', (
     tester,
   ) async {
@@ -49,7 +127,7 @@ void main() {
     expect(find.text('Sıradaki ödeme'), findsOneWidget);
     expect(find.text('Spotify'), findsOneWidget);
     expect(find.textContaining('59,99 TRY'), findsNWidgets(2));
-    expect(scheduler.scheduledNames, ['Spotify']);
+    expect(scheduler.scheduledNames, ['Spotify', 'Spotify']);
     expect(scheduler.permissionRequested, isTrue);
   });
 
@@ -163,9 +241,14 @@ void main() {
 final class _FakeNotificationScheduler implements NotificationScheduler {
   bool permissionRequested = false;
   final List<String> scheduledNames = [];
+  final List<RecurringPayment> scheduledPayments = [];
+  final List<String> events = [];
+  String? failForId;
 
   @override
-  Future<void> cancelForOccurrence(String recurringPaymentId) async {}
+  Future<void> cancelForOccurrence(String recurringPaymentId) async {
+    events.add('cancel:$recurringPaymentId');
+  }
 
   @override
   Future<void> initialize() async {}
@@ -176,5 +259,19 @@ final class _FakeNotificationScheduler implements NotificationScheduler {
   @override
   Future<void> scheduleFor(RecurringPayment payment) async {
     scheduledNames.add(payment.name);
+    scheduledPayments.add(payment);
+    events.add('schedule:${payment.id}');
+    if (payment.id == failForId) throw StateError('Scheduling failed');
   }
 }
+
+RecurringPayment _payment(String id, LocalDate date) => RecurringPayment(
+  id: id,
+  name: id,
+  amountMinor: 5999,
+  currencyCode: 'TRY',
+  nextPaymentDate: date,
+  billingSchedule: BillingSchedule.monthly(day: date.day),
+  category: SystemCategory.entertainment,
+  createdAtUtc: DateTime.utc(2026, 8, 1),
+);

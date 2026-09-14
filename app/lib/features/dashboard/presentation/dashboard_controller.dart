@@ -45,9 +45,17 @@ final class DashboardController extends StateNotifier<DashboardState> {
         _occurrences.getAwaitingConfirmation(),
         _occurrences.getMonthlySummary(today),
       ]);
+      final payments = results[0] as List<RecurringPayment>;
+      for (final payment in payments) {
+        try {
+          await _notifications.scheduleFor(payment);
+        } catch (_) {
+          // Reminder repair is best-effort; continue with the other payments.
+        }
+      }
       state = DashboardState(
         loading: false,
-        payments: results[0] as List<RecurringPayment>,
+        payments: payments,
         awaiting: results[1] as List<PaymentOccurrence>,
         summaries: results[2] as List<CurrencyMonthlySummary>,
       );
